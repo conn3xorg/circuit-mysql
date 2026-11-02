@@ -1,5 +1,7 @@
 # circuit-mysql
 
+[![Conn3x grade](https://conn3x.org/circuits/mysql/grade.svg)](https://conn3x.org/circuits/mysql/grade)
+
 A Conn3x circuit that installs MySQL Community Server from Oracle's own repositories, and creates the databases, users and grants your apps log in with. It does what `mysql_secure_installation` would, without anyone typing answers into it, and keeps doing it: if an anonymous user or a `test` database turns up later, the next plan shows it.
 
 Its inputs match [circuit-mariadb](https://github.com/conn3xorg/circuit-mariadb)'s, apart from `mysql_version`, so you can switch a module between the two by changing its source and that one line. The data doesn't move with it; that's a dump and a restore.
