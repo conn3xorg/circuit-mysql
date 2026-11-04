@@ -18,7 +18,7 @@ variable "app_db_password" {
 }
 
 module "mysql" {
-  source = "github.com/conn3xorg/circuit-mysql?ref=v0.1.0"
+  source = "github.com/conn3xorg/circuit-mysql?ref=v0.2.0"
 
   hosts                = { db = "192.168.1.30" }
   ssh_private_key_file = "~/.ssh/id_ed25519"
