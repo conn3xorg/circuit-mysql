@@ -46,15 +46,36 @@ locals {
   # The systemd unit is mysql on Debian and Ubuntu, and mysqld on Red Hat.
   layout = {
     debian = {
+      main    = "/etc/mysql/my.cnf"
       config  = "/etc/mysql/mysql.conf.d/zz-conn3x.cnf"
       service = "mysql"
     }
     redhat = {
+      main    = "/etc/my.cnf"
       config  = "/etc/my.cnf.d/zz-conn3x.cnf"
       service = "mysqld"
     }
   }
   hosts = { for name, f in local.family : name => local.layout[f] }
+
+  # Tests a new zz-conn3x.cnf with every other option file MySQL reads, but
+  # not the old zz-conn3x.cnf: a bad option left in that would fail the
+  # test of its fix too. The drop-in directory is copied with the new file
+  # in its place, and the main option file is pointed at the copy.
+  config_test = {
+    for name, h in local.hosts : name => join("; ", [
+      "set -e",
+      "cd /",
+      "d=$(mktemp -d)",
+      "trap 'rm -rf \"$d\"' EXIT",
+      "mkdir \"$d/conf.d\"",
+      "for f in ${dirname(h.config)}/*; do if [ -f \"$f\" ] && [ \"$f\" != ${h.config} ]; then cp \"$f\" \"$d/conf.d/\"; fi; done",
+      "cp %s \"$d/conf.d/${basename(h.config)}\"",
+      "sed -E \"s#^!includedir +${dirname(h.config)}/*\\$#!includedir $d/conf.d/#\" ${h.main} > \"$d/my.cnf\"",
+      "grep -qxF \"!includedir $d/conf.d/\" \"$d/my.cnf\" || { echo '${h.main} has no !includedir ${dirname(h.config)} line to test the new file in.' >&2; exit 1; }",
+      "mysqld --defaults-file=\"$d/my.cnf\" --validate-config --user=mysql",
+    ])
+  }
 
   port    = try(var.settings.port, "3306")
   datadir = try(var.settings.datadir, "/var/lib/mysql")
@@ -190,11 +211,15 @@ circuit "mysql" {
     become           = var.ssh_become
   }
 
+  # mysqld reads the option files as a server start would and stops at an
+  # option it doesn't know, so a misspelt setting fails the apply, and the
+  # old file stays for the next restart.
   step "config" {
     file {
-      path    = local.hosts[each.key].config
-      content = local.conf
-      mode    = "0644"
+      path     = local.hosts[each.key].config
+      content  = local.conf
+      mode     = "0644"
+      validate = local.config_test[each.key]
     }
     depends_on = [conn3x_package.mysql_apt__server, conn3x_line.mysql_el__include, conn3x_command.mysql_selinux__port]
   }
@@ -211,10 +236,9 @@ circuit "mysql" {
     }
   }
 
-  # Before anything restarts, checks the new file. mysqld reads every option
-  # file as a server start would and stops at an option it doesn't know, so
-  # a misspelt setting fails the apply and the running server keeps what it
-  # had.
+  # Before anything restarts, checks every option file again. The config
+  # step's validate doesn't run when only the include line changed, and
+  # that can bring in drop-ins nothing tested.
   step "check" {
     command {
       command = "cd / && out=$(mysqld --validate-config --user=mysql 2>&1) || { echo \"$out\" >&2; exit 1; }"

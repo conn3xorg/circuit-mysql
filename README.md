@@ -64,9 +64,9 @@ On each host, in order:
 1. Adds MySQL's repository, [repo.mysql.com](https://repo.mysql.com), for the series in `mysql_version`: its apt repository on Ubuntu and Debian, its yum repository on Rocky Linux and the rest of Enterprise Linux 10. Both are checked against MySQL's signing key, which ships with the circuit in [files/mysql.asc](files/mysql.asc).
 2. On Enterprise Linux, when `settings` sets a `port` other than 3306, installs `policycoreutils-python-utils` and labels the port `mysqld_port_t` with `semanage`, so SELinux lets MySQL bind it. Hosts with SELinux off skip the label.
 3. Installs `mysql-community-server`. On Enterprise Linux it also adds `!includedir /etc/my.cnf.d` to `/etc/my.cnf`, which MySQL's package leaves out.
-4. Writes a drop-in, `zz-conn3x.cnf`, with a `[mysqld]` section holding `bind_address` and `settings`. Its name sorts after the packages' own files, so your values win.
+4. Writes a drop-in, `zz-conn3x.cnf`, with a `[mysqld]` section holding `bind_address` and `settings`. Its name sorts after the packages' own files, so your values win. The new file is tested before it replaces the old one: `mysqld --validate-config` reads it with every other option file, the way a server start would. A misspelt setting fails the apply with MySQL's own `unknown variable` message, and the old file stays, so the running server, a restart and a reboot all keep what they had. Fix the input and apply again.
 5. On Enterprise Linux's first apply, creates the data directory with `mysqld --initialize-insecure`. Left to the server's first start, it would get a random root password written to `/var/log/mysqld.log`; this way root has none until the next steps give it socket login. Since the drop-in is already there, settings that only count when the data directory is created, such as `lower_case_table_names`, take effect. Debian's and Ubuntu's package creates it on install.
-6. Checks the new file before anything restarts. `mysqld --validate-config` reads every option file the way a server start would, so a misspelt setting fails the apply with MySQL's own `unknown variable` message, and the server keeps running on what it had. Fix the input and apply again.
+6. Checks every option file again with `mysqld --validate-config` before anything restarts, whenever the drop-in or the `/etc/my.cnf` include line changed. A change to the include line alone doesn't rewrite the drop-in, so step 4's test doesn't run for it.
 7. Restarts MySQL when the drop-in changed, then keeps it running and enabled at boot. `bind-address`, `port` and most settings do nothing until a restart.
 8. Has `root@localhost` log in with `auth_socket`: only the system's root user, over the local socket, with no password to steal. That's how the circuit connects, and it's how circuit-mariadb leaves MariaDB's root.
 9. Removes anonymous users, any `root` account that isn't on `localhost`, `127.0.0.1` or `::1`, the `test` database and the grants that let anyone use it. MySQL no longer creates any of these, so this only acts on ones someone added later.
@@ -144,7 +144,7 @@ Ubuntu 26.04 and Debian 12 are in MySQL's apt repository and the circuit accepts
 
 ## Requirements
 
-Requires Conn3x v0.6.5 or later and systemd on each host, with access to `repo.mysql.com` and the distribution's package mirrors.
+Requires Conn3x v0.7.0 or later and systemd on each host, with access to `repo.mysql.com` and the distribution's package mirrors.
 
 ## Tested on
 
