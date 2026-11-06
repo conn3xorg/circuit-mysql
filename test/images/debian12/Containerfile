@@ -1,0 +1,14 @@
+# Debian 12 with systemd and sshd, a managed host for this circuit's
+# end-to-end tests, built like Conn3x's own debian13 test image.
+FROM docker.io/library/debian:bookworm
+
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends systemd systemd-sysv dbus openssh-server sudo ca-certificates \
+ && rm -rf /var/lib/apt/lists/* \
+ && systemctl enable ssh \
+ && systemctl mask systemd-firstboot.service \
+ && mkdir -p -m 700 /root/.ssh
+
+STOPSIGNAL SIGRTMIN+3
+EXPOSE 22
+CMD ["/sbin/init"]
