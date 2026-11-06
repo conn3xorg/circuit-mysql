@@ -18,7 +18,7 @@ variable "app_db_password" {
 }
 
 module "mysql" {
-  source = "github.com/conn3xorg/circuit-mysql?ref=v0.3.0"
+  source = "github.com/conn3xorg/circuit-mysql?ref=v0.3.1"
 
   hosts                = { db = "192.168.1.30" }
   ssh_private_key_file = "~/.ssh/id_ed25519"
@@ -148,7 +148,7 @@ Requires Conn3x v0.7.0 or later and systemd on each host, with access to `repo.m
 
 ## Tested on
 
-Rocky Linux 10, Ubuntu 24.04 and Debian 13, with MySQL 9.7. CI applies [examples/local](examples/local) to each on amd64, checks that the second plan has no changes, then logs in over TCP as the example's user with its password, creates a table in its own database and reads the row back, checks it's refused the other database, restarts MySQL and reads the row again. The same ran by hand in an arm64 Rocky Linux 10 container, along with MySQL 8.4; a misspelt setting, which failed the apply and left the server running; a password containing a quote and a backslash; a move to port 3307; and an anonymous user, a `test` database and a revoked privilege added by hand, each of which the next plan caught and the apply removed or put back.
+Rocky Linux 10, Ubuntu 24.04, Debian 13 and Debian 12, with MySQL 9.7. CI applies [examples/local](examples/local) to each on amd64, checks that the second plan has no changes, then logs in over TCP as the example's user with its password, creates a table in its own database and reads the row back, checks it's refused the other database, restarts MySQL and reads the row again. The same ran by hand in an arm64 Rocky Linux 10 container, along with MySQL 8.4; a misspelt setting, which failed the apply and left the server running; a password containing a quote and a backslash; a move to port 3307; and an anonymous user, a `test` database and a revoked privilege added by hand, each of which the next plan caught and the apply removed or put back.
 
 All of that ran in containers, where SELinux is off. On Ubuntu 24.04, Debian 13 and Rocky Linux 10 droplets, with SELinux enforcing on Rocky, the example's users and grants were applied with MySQL on port 3307 on Rocky. The circuit labelled 3307 `mysqld_port_t`, MySQL ran confined as `mysqld_t`, the user checks passed, data survived a restart, the second plan had no changes, and the audit log had no denials. All three came back after a reboot with MySQL running, the row still there and the second plan clean.
 
