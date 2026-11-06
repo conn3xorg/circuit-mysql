@@ -42,7 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro: [rocky10, ubuntu2404, debian13]
+        distro: [rocky10, ubuntu2404, debian13, debian12]
     name: e2e (${{ matrix.distro }})
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -62,7 +62,8 @@ jobs:
       - name: Start the ${{ matrix.distro }} host
         working-directory: examples/local
         env:
-          CONTAINERFILE: ${{ github.workspace }}/conn3x/test/images/${{ matrix.distro }}/Containerfile
+          # Conn3x has no Debian 12 test image, so that one lives here.
+          CONTAINERFILE: ${{ github.workspace }}/${{ matrix.distro == 'debian12' && 'test/images' || 'conn3x/test/images' }}/${{ matrix.distro }}/Containerfile
           PODMAN: sudo podman
         run: ./up.sh
       - name: Apply, then plan again with no changes
