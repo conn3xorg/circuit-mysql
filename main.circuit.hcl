@@ -193,9 +193,9 @@ circuit "mysql_selinux" {
 
   step "port" {
     for_each = local.port == "3306" ? [] : [local.port]
-    command {
-      command = "semanage port -a -t mysqld_port_t -p tcp ${item.value} || semanage port -m -t mysqld_port_t -p tcp ${item.value}"
-      unless  = "! selinuxenabled || semanage port -l | awk '$1 == \"mysqld_port_t\" && $2 == \"tcp\"' | grep -qw ${item.value}"
+    selinux_port {
+      port   = item.value
+      setype = "mysqld_port_t"
     }
   }
 }
@@ -221,7 +221,7 @@ circuit "mysql" {
       mode     = "0644"
       validate = local.config_test[each.key]
     }
-    depends_on = [conn3x_package.mysql_apt__server, conn3x_line.mysql_el__include, conn3x_command.mysql_selinux__port]
+    depends_on = [conn3x_package.mysql_apt__server, conn3x_line.mysql_el__include, conn3x_selinux_port.mysql_selinux__port]
   }
 
   # On Red Hat the data directory is created on the server's first start,

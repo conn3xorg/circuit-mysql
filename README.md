@@ -144,7 +144,7 @@ Ubuntu 26.04 and Debian 12 are in MySQL's apt repository and the circuit accepts
 
 ## Requirements
 
-Requires Conn3x v0.7.0 or later and systemd on each host, with access to `repo.mysql.com` and the distribution's package mirrors.
+Requires Conn3x v0.27.0 or later and systemd on each host, with access to `repo.mysql.com` and the distribution's package mirrors.
 
 ## Tested on
 
