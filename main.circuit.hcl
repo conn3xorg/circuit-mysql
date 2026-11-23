@@ -124,9 +124,12 @@ circuit "mysql_apt" {
     }
   }
 
+  # MySQL's 8.4 RPMs recommend user(mysql), which Rocky Linux 10.3's own
+  # mysql8.4-server provides, and its files clash with the community ones.
   step "server" {
     package {
-      name = "mysql-community-server"
+      name               = "mysql-community-server"
+      install_recommends = false
     }
   }
 }
