@@ -254,8 +254,8 @@ circuit "mysql" {
   # running with the new settings. On Red Hat's first apply it's what starts
   # the server.
   step "restart" {
-    command {
-      command = "systemctl restart ${local.hosts[each.key].service}"
+    service_action {
+      name = local.hosts[each.key].service
       triggers = {
         config  = conn3x_file.mysql__config[each.key].revision
         include = try(conn3x_line.mysql_el__include[each.key].revision, "")
